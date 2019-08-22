@@ -43,28 +43,37 @@ for epoch in range(start_epoch, opt.niter):
         if i < 1:
             prev_gray, prev_y, prev_type = gray_img, y, collar_type
             continue
+
         valid = Tensor(y.shape[0], 1).fill_(1.0).cuda()
         valid.requires_grad = False
         fake = Tensor(y.shape[0], 1).fill_(0.0).cuda()
         fake.require_grad = False
-        _, class_feat = model.classifier2(prev_gray.cuda())
-        fake_img = model.netG(src_img.cuda(), class_feat)
+
+        _, class_feat1 = model.classifier(gray_img.cuda())
+        _, class_feat2 = model.classifier(prev_gray.cuda())
+        rec_img = model.netG(src_img.cuda(), class_feat1)
+        fake_img = model.netG(src_img.cuda(), class_feat2)
+
         for p in model.netD.parameters():
             p.requires_grad = True
+
         model.optimizerD.zero_grad()
-        true_valid = model.netD(y.cuda())
-        pred_valid = model.netD(fake_img.cuda())
-        d_loss = 0.5 * (model.adv_loss(true_valid[0], valid) + model.adv_loss(pred_valid[0], fake))
+
+        true_valid, true_pred_class = model.netD(y.cuda().detach())
+        pred_valid, fake_pred_class = model.netD(fake_img.cuda().detach())
+        d_class = model.class_loss(true_pred_class, collar_type.cuda())
+        d_loss = 0.5 * (model.adv_loss(true_valid, valid) + model.adv_loss(pred_valid, fake)) + 10 * d_class
         d_loss.backward(retain_graph=True)
         model.optimizerD.step()
 
         for p in model.netD.parameters():
-            p.requires_grad=False
+            p.requires_grad = False
         model.optimizerG.zero_grad()
-        G_adv_loss = model.adv_loss(pred_valid[0], valid)
-        pred_class, _ = model.classifier1(fake_img)
-        G_class_loss = model.class_loss(pred_class, prev_type.cuda())
-        g_loss = G_adv_loss + G_class_loss
+
+        G_adv_loss = model.adv_loss(pred_valid, valid)
+        G_class_loss = model.adv_loss(fake_pred_class, prev_type.cuda())
+        G_rec_loss = model.L1Loss(rec_img.cuda(), y.cuda())
+        g_loss = G_adv_loss+100.0*G_rec_loss+10.0*G_class_loss
         g_loss.backward()
         model.optimizerG.step()
 
@@ -84,7 +93,7 @@ for epoch in range(start_epoch, opt.niter):
             if save_fake:
                 print('save imgs')
                 print('')
-                path = './result/recon/' + str(epoch) + '/' + str((i + 1) * 2)
+                path = './result/net2/' + str(epoch) + '/' + str((i + 1) * 2)
                 util.mkdir(path)
                 vutils.save_image(
                     src_img, '%s/src_img.png' % path,
