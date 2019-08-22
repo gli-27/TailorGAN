@@ -52,8 +52,8 @@ class FashionDataset(Dataset):
         src_img = np.multiply(1.0 - mask, org_img)  # np.multiply(mask,blur_img)
 
         collar_type = row_df.collar_type
-        src_img_tensor = self.orig_transform(src_img.astype(np.uint8))
-        orig_img_tensor = self.orig_transform(np.uint8(org_img))
+        src_img_tensor = self.org_transform(src_img.astype(np.uint8))
+        orig_img_tensor = self.org_transform(np.uint8(org_img))
         gray_img_tensor = self.transform(np.uint8(gray_img))
         part_edge_tensor = self.transform(np.uint8(part_edge_img))
         return [gray_img_tensor, src_img_tensor, collar_type, orig_img_tensor]
