@@ -13,7 +13,7 @@ class Options():
         self.parser.add_argument('--data_path', type=str, default='/Res/trainResAnno.csv')
         self.parser.add_argument('--pretrain_pkg', type=str, default='/pretrain_pkg/')
         self.parser.add_argument('--niter', type=int, default=80, help='# of iter at starting learning rate')
-        self.parser.add_argument('--batch_size', type=int, default=4, help='batch size of data loader.')
+        self.parser.add_argument('--batch_size', type=int, default=2, help='batch size of data loader.')
         self.parser.add_argument('--lr', type=float, default=1e-4, help='learning rate.')
         self.parser.add_argument('--isTrain', type=bool, default=True)
         self.parser.add_argument('--gpuid', type=int, default=0)
