@@ -7,24 +7,26 @@ import torchvision.models as models
 
 
 """
-This file refers to network2 of the original.
+This file refers to networks3 of the original one.
 """
 
-def init_net(net, init_type='normal', init_gain=0.02, gpu_ids=[]):
-    """Initialize a network: 1. register CPU/GPU device (with multi-GPU support); 2. initialize the network weights
+def get_norm_layer(norm_type='instance'):
+    """Return a normalization layer
     Parameters:
-        net (network)      -- the network to be initialized
-        init_type (str)    -- the name of an initialization method: normal | xavier | kaiming | orthogonal
-        gain (float)       -- scaling factor for normal, xavier and orthogonal.
-        gpu_ids (int list) -- which GPUs the network runs on: e.g., 0,1,2
-    Return an initialized network.
+        norm_type (str) -- the name of the normalization layer: batch | instance | none
+    For BatchNorm, we use learnable affine parameters and track running statistics (mean/stddev).
+    For InstanceNorm, we do not use learnable affine parameters. We do not track running statistics.
     """
-    if len(gpu_ids) > 0:
-        assert(torch.cuda.is_available())
-        net.to(gpu_ids[0])
-        #net = torch.nn.DataParallel(net, gpu_ids)  # multi-GPUs
-    init_weights(net, init_type, init_gain=init_gain)
-    return net
+    if norm_type == 'batch':
+        norm_layer = functools.partial(nn.BatchNorm2d, affine=True, track_running_stats=True)
+    elif norm_type == 'instance':
+        norm_layer = functools.partial(nn.InstanceNorm2d, affine=False, track_running_stats=False)
+    elif norm_type == 'none':
+        norm_layer = None
+    else:
+        raise NotImplementedError('normalization layer [%s] is not found' % norm_type)
+    return norm_layer
+
 
 def init_weights(net, init_type='normal', init_gain=0.02):
     """Initialize network weights.
@@ -59,22 +61,23 @@ def init_weights(net, init_type='normal', init_gain=0.02):
     print('initialize network with %s' % init_type)
     net.apply(init_func)  # apply the initialization function <init_func>
 
-def get_norm_layer(norm_type='instance'):
-    """Return a normalization layer
+
+def init_net(net, init_type='normal', init_gain=0.02, gpu_ids=[]):
+    """Initialize a network: 1. register CPU/GPU device (with multi-GPU support); 2. initialize the network weights
     Parameters:
-        norm_type (str) -- the name of the normalization layer: batch | instance | none
-    For BatchNorm, we use learnable affine parameters and track running statistics (mean/stddev).
-    For InstanceNorm, we do not use learnable affine parameters. We do not track running statistics.
+        net (network)      -- the network to be initialized
+        init_type (str)    -- the name of an initialization method: normal | xavier | kaiming | orthogonal
+        gain (float)       -- scaling factor for normal, xavier and orthogonal.
+        gpu_ids (int list) -- which GPUs the network runs on: e.g., 0,1,2
+    Return an initialized network.
     """
-    if norm_type == 'batch':
-        norm_layer = functools.partial(nn.BatchNorm2d, affine=True, track_running_stats=True)
-    elif norm_type == 'instance':
-        norm_layer = functools.partial(nn.InstanceNorm2d, affine=False, track_running_stats=False)
-    elif norm_type == 'none':
-        norm_layer = None
-    else:
-        raise NotImplementedError('normalization layer [%s] is not found' % norm_type)
-    return norm_layer
+    if len(gpu_ids) > 0:
+        assert (torch.cuda.is_available())
+        net.to(gpu_ids[0])
+        # net = torch.nn.DataParallel(net, gpu_ids)  # multi-GPUs
+    init_weights(net, init_type, init_gain=init_gain)
+    return net
+
 
 def define_C(norm='batch', use_dropout=False, init_type='normal', init_gain=0.02, gpu_ids=[0]):
     net=None
@@ -88,22 +91,28 @@ def define_G(norm='batch', use_dropout=False, init_type='normal', init_gain=0.02
     net=generator(norm_layer= norm_layer, use_dropout=use_dropout)
     return init_net(net, init_type, init_gain, gpu_ids)
 
+def define_G2(norm='batch', use_dropout=False, init_type='normal', init_gain=0.02, gpu_ids=[0]):
+    net=None
+    norm_layer=get_norm_layer(norm_type=norm)
+    net=generator2(norm_layer= norm_layer, use_dropout=use_dropout)
+    return init_net(net, init_type, init_gain, gpu_ids)
+
 def define_D(norm='batch', use_dropout=False, init_type='normal', init_gain=0.02, gpu_ids=[0]):
     net=None
     norm_layer=get_norm_layer(norm_type=norm)
     net=discriminator(norm_layer= norm_layer)
     return init_net(net, init_type, init_gain, gpu_ids)
 
-
 class vggLoss():
+
     def contentFunc(self):
         conv_3_3_layer = 14
         cnn = models.vgg19(pretrained=True).features
         cnn = cnn.cuda()
         model = nn.Sequential()
         model = model.cuda()
-        for i,layer in enumerate(list(cnn)):
-            model.add_module(str(i),layer)
+        for i, layer in enumerate(list(cnn)):
+            model.add_module(str(i), layer)
             if i == conv_3_3_layer:
                 break
         return model
@@ -118,6 +127,7 @@ class vggLoss():
         f_real_no_grad = f_real.detach()
         loss = self.criterion(f_fake, f_real_no_grad)
         return loss
+
 
 class ResnetBlock(nn.Module):
     """Define a Resnet block"""
@@ -261,6 +271,113 @@ class generator(nn.Module):
         return output  # ,attn,color
 
 
+class generator2(nn.Module):
+    def __init__(self, n_blocks=6, norm_layer=nn.BatchNorm2d, use_dropout=False, padding_type='reflect'):
+        super(generator2, self).__init__()
+        if type(norm_layer) == functools.partial:
+            use_bias = norm_layer.func == nn.InstanceNorm2d
+        else:
+            use_bias = norm_layer == nn.InstanceNorm2d
+
+        bodyModel = [nn.ReflectionPad2d(3),
+                     nn.Conv2d(3, 32, kernel_size=7, padding=0, bias=use_bias),  # 128*128
+                     norm_layer(32),
+                     nn.ReLU(True),
+                     nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1, bias=use_bias),  ## 64*64
+                     norm_layer(64),
+                     nn.ReLU(True),
+                     nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1, bias=use_bias),  ## 32*32
+                     norm_layer(128),
+                     nn.ReLU(True),
+                     nn.Conv2d(128, 256, kernel_size=3, stride=2, padding=1, bias=use_bias),  ## 16*16
+                     norm_layer(256),
+                     nn.ReLU(True),
+                     nn.Conv2d(256, 512, kernel_size=3, stride=2, padding=1, bias=use_bias),  ## 8*8
+                     norm_layer(512),
+                     nn.ReLU(True),
+                     nn.Conv2d(512, 1024, kernel_size=3, stride=2, padding=1, bias=use_bias),  ## 4*4
+                     norm_layer(1024),
+                     nn.ReLU(True)
+                     ]
+        self.bodyEncoder = nn.Sequential(*bodyModel)
+
+        partModel = [nn.ReflectionPad2d(3),
+                     nn.Conv2d(3, 32, kernel_size=7, padding=0, bias=use_bias),  # 128*128
+                     norm_layer(32),
+                     nn.ReLU(True),
+                     nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1, bias=use_bias),  ## 64*64
+                     norm_layer(64),
+                     nn.ReLU(True),
+                     nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1, bias=use_bias),  ## 32*32
+                     norm_layer(128),
+                     nn.ReLU(True),
+                     nn.Conv2d(128, 256, kernel_size=3, stride=2, padding=1, bias=use_bias),  ## 16*16
+                     norm_layer(256),
+                     nn.ReLU(True),
+                     nn.Conv2d(256, 512, kernel_size=3, stride=2, padding=1, bias=use_bias),  ## 8*8
+                     norm_layer(512),
+                     nn.ReLU(True),
+                     nn.Conv2d(512, 1024, kernel_size=3, stride=2, padding=1, bias=use_bias),  ## 4*4
+                     norm_layer(1024),
+                     nn.ReLU(True)
+                     ]
+        self.partEncoder = nn.Sequential(*partModel)
+
+        decoderModel = []
+        for i in range(n_blocks):  # add ResNet blocks
+            decoderModel += [
+                ResnetBlock(2048, padding_type=padding_type, norm_layer=norm_layer, use_dropout=use_dropout,
+                            use_bias=use_bias)]
+
+        decoderModel += [
+            # upsamp1 -> 8*8
+            nn.ConvTranspose2d(2048, 1024, kernel_size=3, stride=2, padding=1, output_padding=1, bias=use_bias),
+            norm_layer(1024),
+            nn.ReLU(True),
+            # upSamp2 -> 16*16
+            nn.ConvTranspose2d(1024, 512, kernel_size=3, stride=2, padding=1, output_padding=1, bias=use_bias),
+            norm_layer(512),
+            nn.ReLU(True),
+            # upSamp3 -> 32*32
+            nn.ConvTranspose2d(512, 256, kernel_size=3, stride=2, padding=1, output_padding=1, bias=use_bias),
+            norm_layer(256),
+            nn.ReLU(True),
+            ##upSamp4->64*64
+            nn.ConvTranspose2d(256, 128, kernel_size=3, stride=2, padding=1, output_padding=1, bias=use_bias),
+            norm_layer(128),
+            nn.ReLU(True),
+            nn.ConvTranspose2d(128, 64, kernel_size=3, stride=2, padding=1, output_padding=1, bias=use_bias),
+            norm_layer(64),
+            nn.ReLU(True)
+            ## tanh layer
+            # nn.ReflectionPad2d(3),
+            # nn.Conv2d(64, 3, kernel_size=7,padding=0),
+            # nn.Tanh()
+        ]
+        self.decoder = nn.Sequential(*decoderModel)
+
+        model = []
+        model += [nn.ReflectionPad2d(3),
+                  nn.Conv2d(64, 3, kernel_size=7, padding=0),
+                  nn.Tanh()]
+        self.color = nn.Sequential(*model)
+        model = []
+        model += [nn.ReflectionPad2d(3),
+                  nn.Conv2d(64, 1, kernel_size=7, padding=0),
+                  nn.Sigmoid()]
+        self.mask = nn.Sequential(*model)
+
+    def forward(self, src_img, gray_img):
+        self.partEncoded = self.partEncoder(gray_img)
+        self.bodyEncoded = self.bodyEncoder(src_img)
+        vec = torch.cat((self.bodyEncoded, self.partEncoded), dim=1)
+        base = self.decoder(vec)
+        color = self.color(base)
+        attn = self.mask(base)
+        output = attn * color + (1 - attn) * src_img
+        return output  # ,attn,color
+
+
 class discriminator(nn.Module):
     def __init__(self, num_classes=12, norm_layer=nn.BatchNorm2d):
         super(discriminator, self).__init__()
@@ -293,16 +410,8 @@ class discriminator(nn.Module):
             norm_layer(1024),
             nn.LeakyReLU(0.2, inplace=True)
         )
-        # self.pool1 = nn.AvgPool2d(4, 4)
-        # self.pool2 = nn.AvgPool2d(4, 4)
-        self.fc1 = nn.Linear(1024 * 4 * 4, 1024)
-        # self.fc2=nn.Linear(1024*4*4,1024)
         self.adv_layer = nn.Linear(1024 * 4 * 4, 1)
-        self.class_layer = nn.Linear(1024, num_classes)
-        self.softmax = nn.LogSoftmax(dim=1)
-        self.sigmoid = nn.Sigmoid()
         # self.classifier=nn.Linear(12800,num_classes)
-        # self.avgLayer=nn.AvgPool2d(4)
 
     def forward(self, img):
         feature1 = self.layer1(img)
@@ -312,18 +421,9 @@ class discriminator(nn.Module):
         feature5 = self.layer5(feature4)
         # feature5=feature4.view(feature4.size(0), 128*8*8)
         feature6 = feature5.view(feature4.shape[0], -1)
-        x1 = self.fc1(feature6)
-        # x2=F.leaky_relu(self.fc2(feature6))
-        # x1 = x1.view(-1, 1024*1*1)
-        # x2 =  x2.view(-1, 1024*1*1)
-        # print(x2.size())
-        # x2 = x2.view(x2.size(0), -1)
-        # x1 = x2.view(x1.size(0), -1)
-        predClass = self.class_layer(x1)
+        # predClass=self.classifier(feature5)
         predValid = self.adv_layer(feature6)
-        predClass = self.softmax(predClass)
-        predValid = self.sigmoid(predValid)
-        return predValid, predClass  # , feature1, feature2, feature3, feature4
+        return predValid  # , predClass, feature1, feature2, feature3, feature4
 
 
 class classifier(nn.Module):
@@ -354,7 +454,6 @@ class classifier(nn.Module):
         self.layer = nn.Sequential(*model)
         # self.avgpool=nn.AvgPool2d(8)
         self.fc1 = nn.Linear(1024 * 4 * 4, 1024)
-
         self.fc2 = nn.Linear(1024, num_classes)
         self.softmax = nn.LogSoftmax(dim=1)
 
@@ -366,7 +465,7 @@ class classifier(nn.Module):
         # pred_class=self.fc2(x)
         x = F.relu(self.fc2(x))
         pred_class = self.softmax(x)
-        return pred_class, x1
+        return pred_class  # ,x1
 
 
 class HED(torch.nn.Module):
