@@ -1,4 +1,5 @@
 import os
+import torch
 import numpy as np
 from skimage import io
 from torch.utils.data.dataset import Dataset
@@ -9,6 +10,12 @@ class FashionDataset(Dataset):
     def __init__(self, opt):
         self.opt = opt
         self.data_df = pd.read_csv(opt.data_root + opt.data_path)
+        if self.opt.type_classifier == 'collar':
+            self.type_list = [0] * self.opt.num_collar
+            torch.Tensor(self.type_list)
+        else:
+            self.type_list = [0] * self.opt.num_sleeve
+            torch.Tensor(self.type_list)
 
         self.transform = transforms.Compose([
             transforms.ToPILImage(),
@@ -25,19 +32,28 @@ class FashionDataset(Dataset):
         ])
 
     def __getitem__(self, index):
-        imgInd = np.random.choice(len(self.data_df), 1)[0]
-        row_df = self.data_df.iloc[imgInd]
-        org_imgPath = row_df.tgt_imgPath
-        org_img = io.imread(org_imgPath)
+        if torch.is_tensor(index):
+            index = index.tolist()
 
-        edge_imgPath = row_df.edge_imgPath
-        edge_img = io.imread(edge_imgPath)
+        row = self.data_df.iloc[index]
+        org_img = io.imread(row.tgt_imgPath)
+        src_img = io.imread(row.src_imgPath)
+        edge_img = io.imread(row.edge_imgPath)
+
+
+        # imgInd = np.random.choice(len(self.data_df), 1)[0]
+        # row_df = self.data_df.iloc[imgInd]
+        # org_imgPath = row_df.tgt_imgPath
+        # org_img = io.imread(org_imgPath)
+
+        # edge_imgPath = row_df.edge_imgPath
+        # edge_img = io.imread(edge_imgPath)
 
         gray_img = 0.2125*org_img[:, :, 0] + 0.7154*org_img[:, :, 1] + 0.0721*org_img[:, :, 2] # 255.0*rgb2gray(orig_img)
 
         gray_img = np.repeat(gray_img[:, :, np.newaxis], 3, axis=2)
-        bbox_x1, bbox_y1 = row_df.landmark1_x, row_df.landmark1_y
-        bbox_x2, bbox_y2 = row_df.landmark2_x, row_df.landmark2_y
+        bbox_x1, bbox_y1 = row.landmark1_x, row.landmark1_y
+        bbox_x2, bbox_y2 = row.landmark2_x, row.landmark2_y
         centX, centY = int((bbox_x1 + bbox_x2) / 2.0), int((bbox_y1 + bbox_y2) / 2.0)
         mask = np.zeros((256, 256, 3))
 
@@ -51,7 +67,11 @@ class FashionDataset(Dataset):
         part_edge_img = edge_img[tY:bY, tX:bX, :].copy()
         src_img = np.multiply(1.0 - mask, org_img)  # np.multiply(mask,blur_img)
 
-        collar_type = row_df.collar_type
+        # collar_type = self.type_list.copy()
+        # collar_type[row.collar_type] = 1
+        # collar_type = torch.Tensor(collar_type)
+        collar_type = row.collar_type
+
         src_img_tensor = self.org_transform(src_img.astype(np.uint8))
         orig_img_tensor = self.org_transform(np.uint8(org_img))
         gray_img_tensor = self.transform(np.uint8(gray_img))
