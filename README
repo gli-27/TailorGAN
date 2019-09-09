@@ -1,0 +1,5 @@
+# All networks are placed in network_revised.py
+# Use create_model.py to create all models, including classifier training, reconstruction training and syn training.
+# train_classifier.py is used to train classifier.
+# recon.py is used to train reconstruction model
+# train_syn.py is used to train syn model.
