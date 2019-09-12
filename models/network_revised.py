@@ -78,7 +78,7 @@ class GANLoss(nn.Module):
         if use_lsgan:
             self.loss = nn.MSELoss()
         else:
-            self.loss = nn.BCELoss()
+            self.loss = nn.BCEWithLogitsLoss()
 
     def get_target_tensor(self, input, target_is_real):
         target_tensor = None
@@ -107,8 +107,8 @@ class GANLoss(nn.Module):
                 loss += self.loss(pred, target_tensor)
             return loss
         else:
-            target_tensor = self.get_target_tensor(input[-1], target_is_real)
-            return self.loss(input[-1], target_tensor)
+            target_tensor = self.get_target_tensor(input[-1], target_is_real).cuda(gpuid)
+            return self.loss(input[-1].cuda(gpuid), target_tensor)
 
 class vggloss(nn.Module):
     def __init__(self, opt):
