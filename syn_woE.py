@@ -41,18 +41,18 @@ for epoch in range(start_epoch, opt.niter+1):
         total_steps += opt.batch_size
         epoch_iter += opt.batch_size
 
-        gray_img, src_img, img_type, org_img = data
+        edge_img, src_img, img_type, org_img = data
 
-        gray_img = gray_img.cuda(opt.gpuid)
+        edge_img = edge_img.cuda(opt.gpuid)
         src_img = src_img.cuda(opt.gpuid)
         img_type = img_type.cuda(opt.gpuid)
         org_img = org_img.cuda(opt.gpuid)
 
         # Reconstruction step
-        model.optimizer_edgeE.zero_grad()
+        # model.optimizer_edgeE.zero_grad()
         # model.optimizer_srcE.zero_grad()
         # model.optimizer_netG.zero_grad()
-        edge_feat = model.edgeE(gray_img)
+        edge_feat = model.edgeE(edge_img)
         src_feat = model.srcE(src_img)
 
         # resample edge feature dimension, give reference for synthesize
@@ -63,6 +63,8 @@ for epoch in range(start_epoch, opt.niter+1):
         typeinfo = torch.cat((typeinfo2, typeinfo1), dim=0)
 
         # Train discriminator
+        for param in model.netD.parameters():
+            param.requires_grad = True
         model.optimizer_netD.zero_grad()
         syn_feat = torch.cat((resample_edge_feat, src_feat), dim=1)
         syn_img = model.netG(syn_feat, src_img)
@@ -71,13 +73,18 @@ for epoch in range(start_epoch, opt.niter+1):
         lossD_real = model.adv_loss(org_img_d, True, opt.gpuid)
         lossD_fake = model.adv_loss(syn_img_d, False, opt.gpuid)
         lossD = 0.5 * lossD_real + 0.5 * lossD_fake
-        lossD.backward(retain_graph=True)
+        lossD.backward()
         model.optimizer_netD.step()
 
         # Synthesize step
         # model.optimizer_edgeE.zero_grad()
         # model.optimizer_srcE.zero_grad()
+        for param in model.netD.parameters():
+            param.requires_grad = False
+        model.optimizer_netD.zero_grad()
         model.optimizer_netG.zero_grad()
+        syn_img = model.netG(syn_feat, src_img)
+        syn_img_d = model.netD(syn_img.detach())
         ganloss = model.adv_loss(syn_img_d, True, opt.gpuid)
         pred_class = model.classifier(syn_img)
         classloss = model.class_loss(pred_class, typeinfo)
@@ -107,7 +114,7 @@ for epoch in range(start_epoch, opt.niter+1):
         if save_fake:
             print('save imgs')
             print('')
-            path = './result/syn_woE/' + str(epoch) + '/' + str((i + 1) * opt.batch_size)
+            path = './result/syn_woE_G/' + str(epoch) + '/' + str((i + 1) * opt.batch_size)
             util.mkdir(path)
             vutils.save_image(
                 org_img, '%s/org_imgs.png' % path,
@@ -118,7 +125,7 @@ for epoch in range(start_epoch, opt.niter+1):
                 normalize=True
             )
             vutils.save_image(
-                gray_img, '%s/gray_imgs.png' % path,
+                edge_img, '%s/gray_imgs.png' % path,
                 normalize=True
             )
             vutils.save_image(

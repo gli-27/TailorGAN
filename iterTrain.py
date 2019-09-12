@@ -12,7 +12,7 @@ opt = Options().parse()
 print(opt)
 start_epoch, epoch_iter = 1, 0
 
-dataset = data_loader.FashionDataset(opt)
+dataset = data_loader.InterDataset(opt)
 loader = DataLoader(dataset, batch_size=opt.batch_size, num_workers=opt.num_workers, shuffle=True)
 dataset_size = len(dataset)
 
@@ -38,9 +38,10 @@ for epoch in range(start_epoch, opt.niter+1):
         total_steps += opt.batch_size
         epoch_iter += opt.batch_size
 
-        gray_img, src_img, img_type, org_img = data
+        edge_img, refer_edge_img, src_img, img_type, org_img = data
 
-        gray_img = gray_img.cuda(opt.gpuid)
+        edge_img = edge_img.cuda(opt.gpuid)
+        refer_edge_img = refer_edge_img.cuda(opt.gpuid)
         src_img = src_img.cuda(opt.gpuid)
         img_type = img_type.cuda(opt.gpuid)
         org_img = org_img.cuda(opt.gpuid)
@@ -55,7 +56,7 @@ for epoch in range(start_epoch, opt.niter+1):
         model.optimizer_edgeE.zero_grad()
         model.optimizer_srcE.zero_grad()
         model.optimizer_netG.zero_grad()
-        edge_feat = model.edgeE(gray_img)
+        edge_feat = model.edgeE(edge_img)
         src_feat = model.srcE(src_img)
         recon_feat = torch.cat((edge_feat, src_feat), dim=1)
         recon_img = model.netG(recon_feat, src_img)
@@ -66,37 +67,40 @@ for epoch in range(start_epoch, opt.niter+1):
         model.optimizer_edgeE.step()
 
         # resample edge feature dimension, give reference for synthesize
-        mid = opt.batch_size//2
-        resample_edge1, resample_edge2 = edge_feat.chunk(2, dim=0)
-        resample_edge_feat = torch.cat((resample_edge2, resample_edge1), dim=0)
-        typeinfo1, typeinfo2 = img_type.chunk(2, dim=0)
-        typeinfo = torch.cat((typeinfo2, typeinfo1), dim=0)
 
         # Train discriminator
-        model.optimizer_netD.zero_grad()
-        syn_feat = torch.cat((resample_edge_feat, src_feat), dim=1)
-        syn_img = model.netG(syn_feat, src_img)
-        org_img_d = model.netD(org_img)
-        syn_img_d = model.netD(syn_img)
-        lossD_real = model.adv_loss(org_img_d, True, opt.gpuid)
-        lossD_fake = model.adv_loss(syn_img_d, False, opt.gpuid)
-        lossD = 0.5 * lossD_real + 0.5 * lossD_fake
-        lossD.backward(retain_graph=True)
-        model.optimizer_netD.step()
-
-        # Synthesize step
-        # model.optimizer_edgeE.zero_grad()
-        # model.optimizer_srcE.zero_grad()
         # Freeze Encoder Network for Synthesize
         for param in model.srcE.parameters():
             param.requires_grad = False
         for param in model.edgeE.parameters():
             param.requires_grad = False
+        for param in model.netD.parameters():
+            param.requires_grad = True
+
+        model.optimizer_netD.zero_grad()
+        refer_edge_feat = model.edgeE(refer_edge_img)
+        syn_feat = torch.cat((refer_edge_feat, src_feat), dim=1)
+        syn_img = model.netG(syn_feat, src_img)
+        org_img_d = model.netD(org_img)
+        syn_img_d = model.netD(syn_img.detach())
+        lossD_real = model.adv_loss(org_img_d, True, opt.gpuid)
+        lossD_fake = model.adv_loss(syn_img_d, False, opt.gpuid)
+        lossD = 0.5 * lossD_real + 0.5 * lossD_fake
+        lossD.backward()
+        model.optimizer_netD.step()
+
+        # Synthesize step
+        # model.optimizer_edgeE.zero_grad()
+        # model.optimizer_srcE.zero_grad()
+        for param in model.netD.parameters():
+            param.requires_grad = False
 
         model.optimizer_netG.zero_grad()
+        syn_img = model.netG(syn_feat, src_img)
+        syn_img_d = model.netD(syn_img.detach())
         ganloss = model.adv_loss(syn_img_d, True, opt.gpuid)
         pred_class = model.classifier(syn_img)
-        classloss = model.class_loss(pred_class, typeinfo)
+        classloss = model.class_loss(pred_class, img_type)
         VGGloss = model.VGGloss(syn_img, org_img)
         loss = ganloss + classloss + VGGloss
         loss.backward()
@@ -130,7 +134,11 @@ for epoch in range(start_epoch, opt.niter+1):
                 normalize=True
             )
             vutils.save_image(
-                gray_img, '%s/gray_imgs.png' % path,
+                edge_img, '%s/edge_imgs.png' % path,
+                normalize=True
+            )
+            vutils.save_image(
+                refer_edge_img, '%s/refer_edge_imgs.png' % path,
                 normalize=True
             )
             vutils.save_image(

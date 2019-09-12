@@ -38,9 +38,9 @@ for epoch in range(start_epoch, opt.niter+1):
         total_steps += opt.batch_size
         epoch_iter += opt.batch_size
 
-        gray_img, src_img, img_type, org_img = data
+        edge_img, src_img, img_type, org_img = data
 
-        gray_img = gray_img.cuda(opt.gpuid)
+        edge_img = edge_img.cuda(opt.gpuid)
         src_img = src_img.cuda(opt.gpuid)
         img_type = img_type.cuda(opt.gpuid)
         org_img = org_img.cuda(opt.gpuid)
@@ -49,7 +49,7 @@ for epoch in range(start_epoch, opt.niter+1):
         model.optimizer_edgeE.zero_grad()
         model.optimizer_srcE.zero_grad()
         model.optimizer_netG.zero_grad()
-        edge_feat = model.edgeE(gray_img)
+        edge_feat = model.edgeE(edge_img)
         src_feat = model.srcE(src_img)
         recon_feat = torch.cat((edge_feat, src_feat), dim=1)
         recon_img = model.netG(recon_feat, src_img)
@@ -84,7 +84,7 @@ for epoch in range(start_epoch, opt.niter+1):
                 normalize=True
             )
             vutils.save_image(
-                gray_img, '%s/gray_imgs.png' % path,
+                edge_img, '%s/edge_imgs.png' % path,
                 normalize=True
             )
             vutils.save_image(
