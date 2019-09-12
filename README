@@ -3,5 +3,5 @@
 # train_classifier.py is used to train classifier.
 # recon.py is used to train reconstruction model
 # train_syn.py is used to train syn model.
-# syn_woE.py is used to train with frozen encoder
-# iterTrain.py is used to train at the same iteration update encoder in reconstruction, update netG, netD at synthesize step.
+# syn_woE.py is used to train with frozen encoder, for this, opt.step will be set as step2, and the loader is not change since the data is already sampled and replace the order does not matter the forward or backward.
+# iterTrain.py is used to train at the same iteration update encoder in reconstruction, update netG, netD at synthesize step, for this training, use the other data loader, which will load extra reference edge map for synthesize.
