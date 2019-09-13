@@ -88,7 +88,7 @@ class TailorGAN(nn.Module):
 
             self.recon_loss = nn.L1Loss()
             self.VGGloss = network_revised.vggloss(opt)
-            self.adv_loss = network_revised.GANLoss()
+            self.adv_loss = network_revised.GANLOSS()
 
 
 """

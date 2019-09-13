@@ -55,7 +55,8 @@ def define_generator(norm='batch', n_blocks=6, use_dopout=False, padding_type='r
 
 def define_discriminator(input_nc, ndf, n_layers_D, norm='batch', use_sigmoid=False, num_D=3):
     norm_layer = get_norm_layer(norm_type=norm)
-    netD = MultiscaleDiscriminator(input_nc, ndf, n_layers_D, norm_layer, use_sigmoid, num_D)
+    # netD = MultiscaleDiscriminator(input_nc, ndf, n_layers_D, norm_layer, use_sigmoid, num_D)
+    netD = Discriminator(input_nc, norm_layer)
     print(netD)
     netD.apply(weights_init)
     return netD
@@ -65,6 +66,21 @@ def create_classifier(resnet, num_classes):
     print(net)
     return net
     pass
+
+class GANLOSS(nn.Module):
+    def __init__(self):
+        super(GANLOSS, self).__init__()
+        self.criterion = nn.BCEWithLogitsLoss()
+
+    def get_tensor(self, size, target_is_real):
+        if target_is_real:
+            return Variable(torch.ones(size, 1), requires_grad=False)
+        else:
+            return Variable(torch.zeros(size, 1), requires_grad=False)
+
+    def __call__(self, input, target_is_real, gpuid):
+        target_tensor = self.get_tensor(input.size(0), target_is_real).cuda(gpuid)
+        return self.criterion(input, target_tensor)
 
 class GANLoss(nn.Module):
     def __init__(self, use_lsgan=True, target_real_label=1.0, target_fake_label=0.0,
@@ -337,6 +353,37 @@ class generator(nn.Module):
             return output_img
         else:
             return row_img
+
+class Discriminator(nn.Module):
+    def __init__(self, input_nc=3, norm_layer=nn.BatchNorm2d):
+        super(Discriminator, self).__init__()
+        self.netD = []
+        netD = [
+            nn.Conv2d(input_nc, 32, kernel_size=3, stride=2, padding=1),
+            norm_layer(32),
+            nn.ReLU(True),
+            nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1),
+            norm_layer(64),
+            nn.ReLU(True),
+            nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1),
+            norm_layer(128),
+            nn.ReLU(True),
+            nn.Conv2d(128, 256, kernel_size=3, stride=2, padding=1),
+            norm_layer(256),
+            nn.ReLU(True),
+            nn.Conv2d(256, 512, kernel_size=3, stride=2, padding=1),
+            norm_layer(512),
+            nn.ReLU(True)
+        ]
+        self.netD = nn.Sequential(*netD)
+        self.fc1 = nn.Linear(512*4*4, 256)
+        self.fc2 = nn.Linear(256, 1)
+
+    def forward(self, x):
+        x = self.netD(x)
+        x = x.view(x.size(0), -1)
+        x = self.fc1(x)
+        return self.fc2(x)
 
 class MultiscaleDiscriminator(nn.Module):
     def __init__(self, input_nc, ndf=64, n_layers=3, norm_layer=nn.BatchNorm2d,
