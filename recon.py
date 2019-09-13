@@ -73,7 +73,7 @@ for epoch in range(start_epoch, opt.niter+1):
         if save_fake:
             print('save imgs')
             print('')
-            path = './result/train_recon/' + str(epoch) + '/' + str((i + 1) * opt.batch_size)
+            path = './result/train_recon2/' + str(epoch) + '/' + str((i + 1) * opt.batch_size)
             util.mkdir(path)
             vutils.save_image(
                 org_img, '%s/org_imgs.png' % path,
@@ -92,7 +92,7 @@ for epoch in range(start_epoch, opt.niter+1):
                 normalize=True
             )
 
-    save_dir = opt.checkpoints_dir + '/TailorGAN_Garmentset/path/recon'
+    save_dir = opt.checkpoints_dir + '/TailorGAN_Garmentset/path/recon2/'
     util.mkdir(save_dir)
     if epoch % 10 == 0:
         save_path_srcE = save_dir + 'TailorGAN_Garment_recon_srcE_%s.pth' % epoch
