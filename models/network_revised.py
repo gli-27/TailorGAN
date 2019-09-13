@@ -108,7 +108,7 @@ class GANLoss(nn.Module):
             return loss
         else:
             target_tensor = self.get_target_tensor(input[-1], target_is_real).cuda(gpuid)
-            return self.loss(input[-1].cuda(gpuid), target_tensor)
+            return self.loss(input[-1], target_tensor)
 
 class vggloss(nn.Module):
     def __init__(self, opt):
@@ -124,6 +124,7 @@ class vggloss(nn.Module):
             loss += self.weights[i] * self.criterion(x_vgg[i], y_vgg[i].detach())
         return loss
 
+"""
 class vggLoss():
 
     def contentFunc(self):
@@ -148,6 +149,7 @@ class vggLoss():
         f_real_no_grad = f_real.detach()
         loss = self.criterion(f_fake, f_real_no_grad)
         return loss
+"""
 
 
 class ResnetBlock(nn.Module):
@@ -217,25 +219,25 @@ class edgeEncoder(nn.Module):
             use_bias = norm_layer == nn.InstanceNorm2d
 
         edge_encoder = [nn.ReflectionPad2d(3),
-                     nn.Conv2d(3, 32, kernel_size=7, padding=0, bias=use_bias),  # 128*128
-                     norm_layer(32),
-                     nn.ReLU(True),
-                     nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1, bias=use_bias),  ## 64*64
-                     norm_layer(64),
-                     nn.ReLU(True),
-                     nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1, bias=use_bias),  ## 32*32
-                     norm_layer(128),
-                     nn.ReLU(True),
-                     nn.Conv2d(128, 256, kernel_size=3, stride=2, padding=1, bias=use_bias),  ## 16*16
-                     norm_layer(256),
-                     nn.ReLU(True),
-                     nn.Conv2d(256, 512, kernel_size=3, stride=2, padding=1, bias=use_bias),  ## 8*8
-                     norm_layer(512),
-                     nn.ReLU(True),
-                     nn.Conv2d(512, 1024, kernel_size=3, stride=2, padding=1, bias=use_bias),  ## 4*4
-                     norm_layer(1024),
-                     nn.ReLU(True)
-                     ]
+                        nn.Conv2d(3, 32, kernel_size=7, padding=0, bias=use_bias),  # 128*128
+                        norm_layer(32),
+                        nn.ReLU(True),
+                        nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1, bias=use_bias),  ## 64*64
+                        norm_layer(64),
+                        nn.ReLU(True),
+                        nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1, bias=use_bias),  ## 32*32
+                        norm_layer(128),
+                        nn.ReLU(True),
+                        nn.Conv2d(128, 128, kernel_size=3, stride=2, padding=1, bias=use_bias),  ## 16*16
+                        norm_layer(128),
+                        nn.ReLU(True),
+                        nn.Conv2d(128, 256, kernel_size=3, stride=2, padding=1, bias=use_bias),  ## 8*8
+                        norm_layer(256),
+                        nn.ReLU(True),
+                        nn.Conv2d(256, 512, kernel_size=3, stride=2, padding=1, bias=use_bias),  ## 4*4
+                        norm_layer(512),
+                        nn.ReLU(True)
+                        ]
         self.edge_encoder = nn.Sequential(*edge_encoder)
 
     def forward(self, edge_img):
@@ -252,25 +254,25 @@ class srcEncoder(nn.Module):
             use_bias = norm_layer == nn.InstanceNorm2d
 
         src_encoder = [nn.ReflectionPad2d(3),
-                     nn.Conv2d(3, 32, kernel_size=7, padding=0, bias=use_bias),  # 128*128
-                     norm_layer(32),
-                     nn.ReLU(True),
-                     nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1, bias=use_bias),  ## 64*64
-                     norm_layer(64),
-                     nn.ReLU(True),
-                     nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1, bias=use_bias),  ## 32*32
-                     norm_layer(128),
-                     nn.ReLU(True),
-                     nn.Conv2d(128, 256, kernel_size=3, stride=2, padding=1, bias=use_bias),  ## 16*16
-                     norm_layer(256),
-                     nn.ReLU(True),
-                     nn.Conv2d(256, 512, kernel_size=3, stride=2, padding=1, bias=use_bias),  ## 8*8
-                     norm_layer(512),
-                     nn.ReLU(True),
-                     nn.Conv2d(512, 1024, kernel_size=3, stride=2, padding=1, bias=use_bias),  ## 4*4
-                     norm_layer(1024),
-                     nn.ReLU(True)
-                     ]
+                        nn.Conv2d(3, 32, kernel_size=7, padding=0, bias=use_bias),  # 128*128
+                        norm_layer(32),
+                        nn.ReLU(True),
+                        nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1, bias=use_bias),  ## 64*64
+                        norm_layer(64),
+                        nn.ReLU(True),
+                        nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1, bias=use_bias),  ## 32*32
+                        norm_layer(128),
+                        nn.ReLU(True),
+                        nn.Conv2d(128, 128, kernel_size=3, stride=2, padding=1, bias=use_bias),  ## 16*16
+                        norm_layer(128),
+                        nn.ReLU(True),
+                        nn.Conv2d(128, 256, kernel_size=3, stride=2, padding=1, bias=use_bias),  ## 8*8
+                        norm_layer(256),
+                        nn.ReLU(True),
+                        nn.Conv2d(256, 512, kernel_size=3, stride=2, padding=1, bias=use_bias),  ## 4*4
+                        norm_layer(512),
+                        nn.ReLU(True)
+                        ]
         self.src_encoder = nn.Sequential(*src_encoder)
 
     def forward(self, src_img):
@@ -288,24 +290,24 @@ class generator(nn.Module):
         decoderModel = []
         for i in range(n_blocks):  # add ResNet blocks
             decoderModel += [
-                ResnetBlock(2048, padding_type=padding_type, norm_layer=norm_layer, use_dropout=use_dropout,
+                ResnetBlock(1024, padding_type=padding_type, norm_layer=norm_layer, use_dropout=use_dropout,
                             use_bias=use_bias)]
 
         decoderModel += [
             # upsamp1 -> 8*8
-            nn.ConvTranspose2d(2048, 1024, kernel_size=3, stride=2, padding=1, output_padding=1, bias=use_bias),
-            norm_layer(1024),
-            nn.ReLU(True),
-            # upSamp2 -> 16*16
             nn.ConvTranspose2d(1024, 512, kernel_size=3, stride=2, padding=1, output_padding=1, bias=use_bias),
             norm_layer(512),
             nn.ReLU(True),
-            # upSamp3 -> 32*32
+            # upSamp2 -> 16*16
             nn.ConvTranspose2d(512, 256, kernel_size=3, stride=2, padding=1, output_padding=1, bias=use_bias),
             norm_layer(256),
             nn.ReLU(True),
-            ##upSamp4->64*64
+            # upSamp3 -> 32*32
             nn.ConvTranspose2d(256, 128, kernel_size=3, stride=2, padding=1, output_padding=1, bias=use_bias),
+            norm_layer(128),
+            nn.ReLU(True),
+            ##upSamp4->64*64
+            nn.ConvTranspose2d(128, 128, kernel_size=3, stride=2, padding=1, output_padding=1, bias=use_bias),
             norm_layer(128),
             nn.ReLU(True),
             nn.ConvTranspose2d(128, 64, kernel_size=3, stride=2, padding=1, output_padding=1, bias=use_bias),

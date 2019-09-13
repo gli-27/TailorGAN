@@ -54,21 +54,21 @@ class TailorGAN(nn.Module):
             self.netD = network_revised.define_discriminator(input_nc=3, ndf=32, n_layers_D=3, norm='instance', num_D=1)
             if opt.step == 'step2':
                 self.srcE.load_state_dict(torch.load(
-                    './checkpoints/TailorGAN_Garmentset/path/reconTailorGAN_Garment_recon_srcE_%s.pth' % opt.num_epoch,
+                    './checkpoints/TailorGAN_Garmentset/path/recon2/TailorGAN_Garment_recon_srcE_%s.pth' % opt.num_epoch,
                     map_location="cuda:%d" % opt.gpuid
                 ))
                 for param in self.srcE.parameters():
                     param.requires_grad = False
                 self.edgeE.load_state_dict(torch.load(
-                    './checkpoints/TailorGAN_Garmentset/path/reconTailorGAN_Garment_recon_edgeE_%s.pth' % opt.num_epoch,
+                    './checkpoints/TailorGAN_Garmentset/path/recon2/TailorGAN_Garment_recon_edgeE_%s.pth' % opt.num_epoch,
                     map_location="cuda:%d" % opt.gpuid
                 ))
                 for param in self.edgeE.parameters():
                     param.requires_grad = False
-                # self.netG.load_state_dict(torch.load(
-                #     './checkpoints/TailorGAN_Garmentset/path/reconTailorGAN_Garment_recon_netG_%s.pth' % opt.num_epoch,
-                #     map_location="cuda:%d" % opt.gpuid
-                # ))
+                self.netG.load_state_dict(torch.load(
+                    './checkpoints/TailorGAN_Garmentset/path/recon2/TailorGAN_Garment_recon_netG_%s.pth' % opt.num_epoch,
+                    map_location="cuda:%d" % opt.gpuid
+                ))
                 print('Model load successful!')
             if opt.enable_classifier:
                 if opt.type_classifier == 'collar':
