@@ -116,7 +116,7 @@ for epoch in range(start_epoch, opt.niter+1):
         pred_class = model.classifier(syn_img)
         classloss = model.class_loss(pred_class, img_type)
         VGGloss = model.VGGloss(syn_img, org_img)
-        loss = ganloss + classloss + VGGloss
+        loss = ganloss + classloss
         loss.backward()
         # plot_grad_flow(model.netG.named_parameters())
         model.optimizer_netG.step()
@@ -132,7 +132,7 @@ for epoch in range(start_epoch, opt.niter+1):
                   % (epoch, opt.niter, (i+1)*opt.batch_size, dataset_size, total_time, epoch_time, iter_time))
             print('Total loss: %.5f; ganloss: %.5f; classloss: %.5f; VGGloss: %.5f; '
                   'discriminatorloss: %.5f'
-                  % (loss.data, ganloss.data, classloss.data, VGGloss.data, lossD.data))
+                  % (loss.data, ganloss.data, classloss, VGGloss.data, lossD.data))
             # print('Total loss: %.5f; ganloss: %.5f; '
             #       'discriminatorloss: %.5f'
             #       % (loss.data, ganloss.data, lossD.data))

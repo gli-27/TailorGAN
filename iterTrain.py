@@ -113,7 +113,7 @@ for epoch in range(start_epoch, opt.niter+1):
             epoch_time = (time.time() - epoch_start_time)
             iter_time = (time.time() - iter_start_time)
             print('epoch: %d/%d; iters: %d/%d; total_time: %.3f; epoch_time: %.3f; iter_time: %.3f'
-                  % (epoch, opt.niter, (i+1)*opt.batch_size, dataset_size, total_time, epoch_time, iter_time))
+                  % (epoch+100, opt.niter, (i+1)*opt.batch_size, dataset_size, total_time, epoch_time, iter_time))
             print('Total loss: %.5f; ganloss: %.5f; classloss: %.5f; VGGloss: %.5f; '
                   'reconl1loss: %.5f; discriminatorloss: %.5f'
                   % (loss.data, ganloss.data, classloss.data, VGGloss.data, recon_loss.data, lossD.data))
@@ -123,7 +123,7 @@ for epoch in range(start_epoch, opt.niter+1):
         if save_fake:
             print('save imgs')
             print('')
-            path = './result/iterSyn/' + str(epoch) + '/' + str((i + 1) * opt.batch_size)
+            path = './result/iterSyn/' + str(epoch+100) + '/' + str((i + 1) * opt.batch_size)
             util.mkdir(path)
             vutils.save_image(
                 org_img, '%s/org_imgs.png' % path,
@@ -153,13 +153,13 @@ for epoch in range(start_epoch, opt.niter+1):
     save_dir = opt.checkpoints_dir + '/TailorGAN_Garmentset/path/'
     util.mkdir(save_dir)
     if epoch % 10 == 0:
-        save_path_srcE = save_dir + 'TailorGAN_Garment_iterSyn_srcE_%s.pth' % epoch
+        save_path_srcE = save_dir + 'TailorGAN_Garment_iterSyn_srcE_%s.pth' % (epoch+100)
         torch.save(model.srcE.state_dict(), save_path_srcE)
-        save_path_edgeE = save_dir + 'TailorGAN_Garment_iterSyn_edgeE_%s.pth' % epoch
+        save_path_edgeE = save_dir + 'TailorGAN_Garment_iterSyn_edgeE_%s.pth' % (epoch+100)
         torch.save(model.edgeE.state_dict(), save_path_edgeE)
-        save_path_netG = save_dir + 'TailorGAN_Garment_iterSyn_netG_%s.pth' % epoch
+        save_path_netG = save_dir + 'TailorGAN_Garment_iterSyn_netG_%s.pth' % (epoch+100)
         torch.save(model.netG.state_dict(), save_path_netG)
-        save_path_netD = save_dir + 'TailorGAN_Garment_iterSyn_netD_%s.pth' % epoch
+        save_path_netD = save_dir + 'TailorGAN_Garment_iterSyn_netD_%s.pth' % (epoch+100)
         torch.save(model.netD.state_dict(), save_path_netD)
         print('Model saved!')
 print('Training Finished')
