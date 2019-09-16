@@ -292,7 +292,7 @@ def main(config):
 if __name__ == "__main__":
     config = parse_args()
     config.is_train = 'train'
-    import vgnet as trainer
+    import lele_gan as trainer
     if not os.path.exists(config.model_dir):
         os.mkdir(config.model_dir)
     if not os.path.exists(config.sample_dir):
