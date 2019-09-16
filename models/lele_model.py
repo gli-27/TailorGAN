@@ -8,6 +8,28 @@ import functools
 import torchvision.models as models
 
 
+def _apply(layer, activation, normalizer, channel_out=None):
+    if normalizer:
+        layer.append(normalizer(channel_out))
+    if activation:
+        layer.append(activation())
+    return layer
+
+def conv2d(channel_in, channel_out,
+           ksize=3, stride=1, padding=1,
+           activation=nn.ReLU,
+           normalizer=nn.BatchNorm2d):
+    layer = list()
+    bias = True if not normalizer else False
+
+    layer.append(nn.Conv2d(channel_in, channel_out,
+                     ksize, stride, padding,
+                     bias=bias))
+    _apply(layer, activation, normalizer, channel_out)
+    # init.kaiming_normal(layer[0].weight)
+
+    return nn.Sequential(*layer)
+
 class ResnetBlock(nn.Module):
     def __init__(self, dim, padding_type, norm_layer, use_dropout, use_bias):
         super(ResnetBlock, self).__init__()
