@@ -361,19 +361,19 @@ class Discriminator(nn.Module):
         netD = [
             nn.Conv2d(input_nc, 32, kernel_size=3, stride=2, padding=1),
             norm_layer(32),
-            nn.ReLU(True),
+            nn.LeakyReLU(0.2, True),
             nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1),
             norm_layer(64),
-            nn.ReLU(True),
+            nn.LeakyReLU(0.2, True),
             nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1),
             norm_layer(128),
-            nn.ReLU(True),
+            nn.LeakyReLU(0.2, True),
             nn.Conv2d(128, 256, kernel_size=3, stride=2, padding=1),
             norm_layer(256),
-            nn.ReLU(True),
+            nn.LeakyReLU(0.2, True),
             nn.Conv2d(256, 512, kernel_size=3, stride=2, padding=1),
             norm_layer(512),
-            nn.ReLU(True)
+            nn.LeakyReLU(0.2, True)
         ]
         self.netD = nn.Sequential(*netD)
         self.fc1 = nn.Linear(512*4*4, 256)
