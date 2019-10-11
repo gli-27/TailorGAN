@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 from util import util
 from data import data_loader
 from models import create_model
-from options.options import Options
+from options.options import ClassifierOptions
 
 
 def plot_grad_flow(named_parameters):
@@ -43,11 +43,11 @@ def plot_grad_flow(named_parameters):
     plt.show()
 
 
-opt = Options().parse()
+opt = ClassifierOptions().parse()
 print(opt)
 start_epoch, epoch_iter = 1, 0
 
-dataset = data_loader.FashionDataset(opt)
+dataset = data_loader.InterDataset(opt)
 loader = DataLoader(dataset, batch_size=opt.batch_size, num_workers=opt.num_workers, shuffle=True)
 dataset_size = len(dataset)
 
@@ -60,7 +60,7 @@ else:
     type_list = [0] * 2
     type_list = torch.Tensor(type_list).cuda(opt.gpuid)
 
-model = create_model.create_classifier_model(opt, type_classifier)
+model = create_model.create_classifier_model(opt)
 model = model.cuda(opt.gpuid)
 model.classifier.train()
 
@@ -82,9 +82,9 @@ for epoch in range(start_epoch, opt.niter+1):
         total_steps += opt.batch_size
         epoch_iter += opt.batch_size
 
-        _, _, collar_type, org_img = data
+        _, _, _, org_img_type, _, org_img, _ = data
         org_img = org_img.cuda(opt.gpuid)
-        collar_type = collar_type.cuda(opt.gpuid)
+        collar_type = org_img_type.cuda(opt.gpuid)
 
         # model.classifier.zero_grad()
         model.optimizer.zero_grad()
@@ -105,8 +105,8 @@ for epoch in range(start_epoch, opt.niter+1):
 
     save_dir = opt.checkpoints_dir + '/classifier/path/'
     util.mkdir(save_dir)
-    if epoch % 10 == 0:
-        save_path = save_dir + 'classifier_%s_%s_%s.pth' % (opt.type_classifier, opt.resnet, epoch)
+    if epoch % 25 == 0:
+        save_path = save_dir + 'classifier_%s_%s.pth' % (opt.type_classifier, epoch)
         print('Save Model.')
         torch.save(model.classifier.state_dict(), save_path)
 print('Training Finished')
