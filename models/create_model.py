@@ -35,11 +35,11 @@ class ClassifierModel(nn.Module):
             self.optimizer = torch.optim.Adam(self.classifier.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
         else:
             if opt.type_classifier == 'collar':
-                self.classifier.load_state_dict(torch.load('./checkpoints/classifier/path/classifier_%s_40.pth'
+                self.classifier.load_state_dict(torch.load('./checkpoints/classifier/path/classifier_%s_50.pth'
                                                            % opt.type_classifier,
                                                            map_location="cuda:%d" % opt.gpuid))
             else:
-                self.classifier.load_state_dict(torch.load('./checkpoints/classifier/path/classifier_%s_40.pth'
+                self.classifier.load_state_dict(torch.load('./checkpoints/classifier/path/classifier_%s_50.pth'
                                                            % opt.type_classifier,
                                                            map_location="cuda:%d" % opt.gpuid))
             print('Model load successful!')
@@ -117,8 +117,8 @@ class TailorGAN(nn.Module):
                     self.classifier = network_revised.define_classifier(opt.num_collar)
                 else:
                     self.classifier = network_revised.define_classifier(opt.num_sleeve)
-                self.classifier.load_state_dict(torch.load('./checkpoints/classifier/path/classifier_%s_%s.pth'
-                                                       % (opt.type_classifier, opt.num_epoch),
+                self.classifier.load_state_dict(torch.load('./checkpoints/classifier/path/classifier_%s_50.pth'
+                                                       % opt.type_classifier,
                                                        map_location="cuda:%d" % opt.gpuid))
                 for param in self.classifier.parameters():
                     param.requires_grad = False
@@ -133,15 +133,15 @@ class TailorGAN(nn.Module):
             self.adv_loss = network_revised.GANLOSS()
         else:
             self.edgeE.load_state_dict(torch.load(
-                    './checkpoints/TailorGAN_Garmentset/path/collarRecon/TailorGAN_Garment_recon_edgeE_%s.pth' % opt.num_epoch,
+                    './checkpoints/TailorGAN_Garmentset/path/collarReconLeave1out/TailorGAN_Garment_recon_edgeE_%s.pth' % opt.num_epoch,
                     map_location="cuda:%d" % opt.gpuid
             ))
             self.srcE.load_state_dict(torch.load(
-                './checkpoints/TailorGAN_Garmentset/path/collarRecon/TailorGAN_Garment_recon_srcE_%s.pth' % opt.num_epoch,
+                './checkpoints/TailorGAN_Garmentset/path/collarReconLeave1out/TailorGAN_Garment_recon_srcE_%s.pth' % opt.num_epoch,
                 map_location="cuda:%d" % opt.gpuid
             ))
             self.netG.load_state_dict(torch.load(
-                './checkpoints/TailorGAN_Garmentset/path/collarRecon/TailorGAN_Garment_recon_netG_%s.pth' % opt.num_epoch,
+                './checkpoints/TailorGAN_Garmentset/path/collarReconLeave1out/TailorGAN_Garment_recon_netG_%s.pth' % opt.num_epoch,
                 map_location="cuda:%d" % opt.gpuid
             ))
 
@@ -160,19 +160,19 @@ class SleeveGAN(nn.Module):
         if self.isTrain:
             if opt.step == 'step2':
                 self.srcE.load_state_dict(torch.load(
-                    './checkpoints/TailorGAN_Garmentset/path/sleeveReconL1/TailorGAN_Garment_recon_srcE_%s.pth' % opt.num_epoch,
+                    './checkpoints/TailorGAN_Garmentset/path/sleeveRecon/TailorGAN_Garment_recon_srcE_%s.pth' % opt.num_epoch,
                     map_location="cuda:%d" % opt.gpuid
                 ))
                 # for param in self.srcE.parameters():
                 #     param.requires_grad = False
                 self.edgeE.load_state_dict(torch.load(
-                    './checkpoints/TailorGAN_Garmentset/path/sleeveReconL1/TailorGAN_Garment_recon_edgeE_%s.pth' % opt.num_epoch,
+                    './checkpoints/TailorGAN_Garmentset/path/sleeveRecon/TailorGAN_Garment_recon_edgeE_%s.pth' % opt.num_epoch,
                     map_location="cuda:%d" % opt.gpuid
                 ))
                 # for param in self.edgeE.parameters():
                 #     param.requires_grad = False
                 self.netG.load_state_dict(torch.load(
-                    './checkpoints/TailorGAN_Garmentset/path/sleeveReconL1/TailorGAN_Garment_recon_netG_%s.pth' % opt.num_epoch,
+                    './checkpoints/TailorGAN_Garmentset/path/sleeveRecon/TailorGAN_Garment_recon_netG_%s.pth' % opt.num_epoch,
                     map_location="cuda:%d" % opt.gpuid
                 ))
                 self.netD = network_revised.define_discriminator(opt.num_sleeve, input_nc=3, ndf=32, n_layers_D=3,
@@ -185,8 +185,8 @@ class SleeveGAN(nn.Module):
                     self.classifier = network_revised.define_classifier(opt.num_collar)
                 else:
                     self.classifier = network_revised.define_classifier(opt.num_sleeve)
-                self.classifier.load_state_dict(torch.load('./checkpoints/classifier/path/classifier_%s_%s.pth'
-                                                       % (opt.type_classifier, opt.num_epoch),
+                self.classifier.load_state_dict(torch.load('./checkpoints/classifier/path/classifier_%s_50.pth'
+                                                       % opt.type_classifier,
                                                        map_location="cuda:%d" % opt.gpuid))
                 for param in self.classifier.parameters():
                     param.requires_grad = False
@@ -201,14 +201,14 @@ class SleeveGAN(nn.Module):
             self.adv_loss = network_revised.GANLOSS()
         else:
             self.edgeE.load_state_dict(torch.load(
-                    './checkpoints/TailorGAN_Garmentset/path/sleeveSyn40/TailorGAN_Garment_syn_edgeE_%s.pth' % opt.num_epoch,
+                    './checkpoints/TailorGAN_Garmentset/path/sleeveRecon/TailorGAN_Garment_recon_edgeE_%s.pth' % opt.num_epoch,
                     map_location="cuda:%d" % opt.gpuid
             ))
             self.srcE.load_state_dict(torch.load(
-                './checkpoints/TailorGAN_Garmentset/path/sleeveSyn40/TailorGAN_Garment_syn_srcE_%s.pth' % opt.num_epoch,
+                './checkpoints/TailorGAN_Garmentset/path/sleeveRecon/TailorGAN_Garment_recon_srcE_%s.pth' % opt.num_epoch,
                 map_location="cuda:%d" % opt.gpuid
             ))
             self.netG.load_state_dict(torch.load(
-                './checkpoints/TailorGAN_Garmentset/path/sleeveSyn40/TailorGAN_Garment_syn_netG_%s.pth' % opt.num_epoch,
+                './checkpoints/TailorGAN_Garmentset/path/sleeveRecon/TailorGAN_Garment_recon_netG_%s.pth' % opt.num_epoch,
                 map_location="cuda:%d" % opt.gpuid
             ))
