@@ -9,7 +9,7 @@ from util import util
 from PIL import Image
 import torchvision.utils as vutils
 
-class InterDataset(Dataset):
+class CollarDataset(Dataset):
     def __init__(self, opt):
         self.opt = opt
         self.data_df = pd.read_csv(opt.data_root + opt.data_path)
@@ -41,7 +41,9 @@ class InterDataset(Dataset):
         row = self.data_df.iloc[index]
         org_img = io.imread(row.tgt_imgPath)
         src_img = io.imread(row.src_imgPath)
-        edge_img = io.imread(row.part_edgePath)
+        # edge_img = io.imread(row.part_edgePath)
+        # FOR WO edge input, use RGB instead.
+        edge_img = io.imread(row.tgt_imgPath)
         # refer_row = self.data_df.sample(n=1, replace=False, axis=0)
         idx = random.randint(0, len(self.data_df)-1)
         refer_row = self.data_df.iloc[idx]
@@ -229,11 +231,10 @@ class CollarTestDataset(Dataset):
     def __len__(self):
         return max(len(self.collarTwo_df), len(self.collarSix_df), len(self.collarOne_df))
 
-class SleeveTestDataset(Dataset):
+class CollarTest(Dataset):
     def __init__(self, opt):
         self.opt = opt
-        self.shortSleeve_df = pd.read_csv(opt.data_root + '/TestSet/shortSleeveSet.csv')
-        self.longSleeve_df = pd.read_csv(opt.data_root + '/TestSet/longSleeveSet.csv')
+        self.collar_df = pd.read_csv(opt.data_root + '/Res/testSet.csv')
 
         self.transform = transforms.Compose([
             transforms.ToPILImage(),
@@ -248,6 +249,31 @@ class SleeveTestDataset(Dataset):
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
         ])
+
+    def __getitem__(self, idx):
+        refIdx = np.random.randint(0, len(self.collar_df)-1)
+        baseRow = self.collar_df.iloc[idx]
+        refRow = self.collar_df.iloc[refIdx]
+
+        edge = io.imread(refRow.part_edgePath)
+        src = io.imread(baseRow.src_imgPath)
+        org = io.imread(baseRow.tgt_imgPath)
+        refType = refRow.collar_type
+
+        edgeTensor = self.transform(np.uint8(edge))
+        srcTensor = self.org_transform(src.astype(np.uint8))
+        orgTensor = self.org_transform(org.astype(np.uint8))
+
+        return [edgeTensor, srcTensor, orgTensor, refType]
+
+    def __len__(self):
+        return len(self.collar_df)
+
+class SleeveTestDataset(Dataset):
+    def __init__(self, opt):
+        self.opt = opt
+        self.shortSleeve_df = pd.read_csv(opt.data_root + '/TestSet/shortSleeveSet.csv')
+        self.longSleeve_df = pd.read_csv(opt.data_root + '/TestSet/longSleeveSet.csv')
 
     def __getitem__(self, index):
         shortRow = self.shortSleeve_df.iloc[index]
@@ -272,3 +298,85 @@ class SleeveTestDataset(Dataset):
 
     def __len__(self):
         return min(len(self.shortSleeve_df), len(self.longSleeve_df))
+
+
+class SleeveTest(Dataset):
+    def __init__(self, opt):
+        self.opt = opt
+        self.sleeve_df = pd.read_csv(opt.data_root + '/test_sleeve.csv')
+
+        self.transform = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize((128, 128), interpolation=2),
+            transforms.RandomAffine(degrees=5),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+        ])
+        self.org_transform = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize((128, 128), interpolation=2),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+        ])
+
+    def __getitem__(self, index):
+        refIdx = np.random.choice(len(self.sleeve_df), 1)[0]
+        refRow = self.sleeve_df.iloc[refIdx]
+        row = self.sleeve_df.iloc[index]
+
+        refEdge = io.imread(refRow.CroppedSleeve)
+        src = io.imread(row.cropped_img_path)
+        org = io.imread(row.imageName)
+
+        edgeTensor = self.transform(np.uint8(refEdge))
+        srcTensor = self.org_transform(src.astype(np.uint8))
+        orgTensor = self.org_transform(org.astype(np.uint8))
+
+        return [edgeTensor, srcTensor, orgTensor]
+
+    def __len__(self):
+        return len(self.sleeve_df)
+
+
+class LeaveOutTest(Dataset):
+    def __init__(self, opt):
+        self.opt = opt
+        self.collar_df = pd.read_csv(opt.data_root + '/Res/mainTestSet.csv')
+        self.one_df = pd.read_csv(opt.data_root + '/Res/one.csv')
+        self.two_df = pd.read_csv(opt.data_root + '/Res/two.csv')
+        self.six_df = pd.read_csv(opt.data_root + '/Res/six.csv')
+
+        self.transform = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize((128, 128), interpolation=2),
+            transforms.RandomAffine(degrees=5),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+        ])
+        self.org_transform = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize((128, 128), interpolation=2),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+        ])
+
+    def __getitem__(self, idx):
+        srcIdx = np.random.randint(0, len(self.collar_df)-1)
+        srcRow = self.collar_df.iloc[srcIdx]
+        refRow = self.six_df.iloc[idx]
+
+        edge = io.imread(refRow.part_edgePath)
+        ref = io.imread(refRow.tgt_imgPath)
+        src = io.imread(srcRow.src_imgPath)
+        org = io.imread(srcRow.tgt_imgPath)
+        refType = refRow.collar_type
+
+        edgeTensor = self.transform(np.uint8(edge))
+        refTensor = self.org_transform(ref.astype(np.uint8))
+        srcTensor = self.org_transform(src.astype(np.uint8))
+        orgTensor = self.org_transform(org.astype(np.uint8))
+
+        return [edgeTensor, srcTensor, orgTensor, refTensor, refType]
+
+    def __len__(self):
+        return len(self.six_df)
