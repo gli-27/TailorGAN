@@ -12,7 +12,7 @@ opt = CollorOptions().parse()
 print(opt)
 start_epoch, epoch_iter = 1, 0
 
-dataset = data_loader.InterDataset(opt)
+dataset = data_loader.CollarDataset(opt)
 loader = DataLoader(dataset, batch_size=opt.batch_size, num_workers=opt.num_workers, shuffle=True)
 dataset_size = len(dataset)
 
@@ -70,7 +70,7 @@ for epoch in range(start_epoch, opt.niter+1):
 
         save_fake = total_steps % opt.display_freq == display_delta
 
-        if save_fake:
+        if save_fake and False:
             print('save imgs')
             print('')
             path = './result/collarReconLarge/' + str(epoch) + '/' + str((i + 1) * opt.batch_size)
@@ -92,7 +92,7 @@ for epoch in range(start_epoch, opt.niter+1):
                 normalize=True
             )
 
-    save_dir = opt.checkpoints_dir + '/TailorGAN_Garmentset/path/collarReconLarge/'
+    save_dir = opt.checkpoints_dir + '/TailorGAN_Garmentset/path/collarReconLeave6out/'
     util.mkdir(save_dir)
     if epoch % 20 == 0:
         save_path_srcE = save_dir + 'TailorGAN_Garment_recon_srcE_%s.pth' % epoch
