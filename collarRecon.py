@@ -5,7 +5,7 @@ import torchvision.utils as vutils
 from torch.utils.data import DataLoader
 from util import util
 from data import data_loader
-from models import create_model2
+from models import create_model
 from options.options import CollorOptions
 
 opt = CollorOptions().parse()
@@ -16,7 +16,7 @@ dataset = data_loader.CollarDataset(opt)
 loader = DataLoader(dataset, batch_size=opt.batch_size, num_workers=opt.num_workers, shuffle=True)
 dataset_size = len(dataset)
 
-model = create_model2.create_collar_model(opt)
+model = create_model.create_collar_model(opt)
 model = model.cuda(opt.gpuid)
 Tensor = torch.cuda.FloatTensor
 
@@ -46,18 +46,20 @@ for epoch in range(start_epoch, opt.niter+1):
         org_img = org_img.cuda(opt.gpuid)
 
         # Reconstruction step
-        model.optimizer_edgeE.zero_grad()
-        model.optimizer_srcE.zero_grad()
-        model.optimizer_netG.zero_grad()
+        # model.optimizer_edgeE.zero_grad()
+        # model.optimizer_srcE.zero_grad()
+        # model.optimizer_netG.zero_grad()
+        model.optimizer.zero_grad()
         edge_feat = model.edgeE(edge_img)
         src_feat = model.srcE(src_img)
         recon_feat = torch.cat((edge_feat, src_feat), dim=1)
         recon_img = model.netG(recon_feat, src_img)
         recon_loss = model.recon_loss(recon_img, org_img)
         recon_loss.backward()
-        model.optimizer_netG.step()
-        model.optimizer_srcE.step()
-        model.optimizer_edgeE.step()
+        model.optimizer.step()
+        # model.optimizer_netG.step()
+        # model.optimizer_srcE.step()
+        # model.optimizer_edgeE.step()
 
         if total_steps % opt.print_freq == print_delta:
             total_time = (time.time() - total_start_time)
@@ -73,7 +75,7 @@ for epoch in range(start_epoch, opt.niter+1):
         if save_fake and False:
             print('save imgs')
             print('')
-            path = './result/collarReconLarge/' + str(epoch) + '/' + str((i + 1) * opt.batch_size)
+            path = './result/collarRecon/' + str(epoch) + '/' + str((i + 1) * opt.batch_size)
             util.mkdir(path)
             vutils.save_image(
                 org_img, '%s/org_imgs.png' % path,
@@ -92,14 +94,14 @@ for epoch in range(start_epoch, opt.niter+1):
                 normalize=True
             )
 
-    save_dir = opt.checkpoints_dir + '/TailorGAN_Garmentset/path/collarReconLeave6out/'
+    save_dir = opt.checkpoints_dir + '/Recon/'
     util.mkdir(save_dir)
     if epoch % 20 == 0:
-        save_path_srcE = save_dir + 'TailorGAN_Garment_recon_srcE_%s.pth' % epoch
+        save_path_srcE = save_dir + 'collarRecon_srcE_%s.pth' % epoch
         torch.save(model.srcE.state_dict(), save_path_srcE)
-        save_path_edgeE = save_dir + 'TailorGAN_Garment_recon_edgeE_%s.pth' % epoch
+        save_path_edgeE = save_dir + 'collarRecon_edgeE_%s.pth' % epoch
         torch.save(model.edgeE.state_dict(), save_path_edgeE)
-        save_path_netG = save_dir + 'TailorGAN_Garment_recon_netG_%s.pth' % epoch
+        save_path_netG = save_dir + 'collarRecon_netG_%s.pth' % epoch
         torch.save(model.netG.state_dict(), save_path_netG)
         print('Model saved!')
 

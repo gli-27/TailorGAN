@@ -5,7 +5,7 @@ import torchvision.utils as vutils
 from torch.utils.data import DataLoader
 from util import util
 from data import data_loader
-from models import create_model
+from models import create_model_revised
 from options.options import SleeveOptions
 
 opt = SleeveOptions().parse()
@@ -16,7 +16,7 @@ dataset = data_loader.SleeveDataset(opt)
 loader = DataLoader(dataset, batch_size=opt.batch_size, num_workers=opt.num_workers, shuffle=True)
 dataset_size = len(dataset)
 
-model = create_model.create_sleeve_model(opt)
+model = create_model_revised.create_sleeve_model(opt)
 model = model.cuda(opt.gpuid)
 Tensor = torch.cuda.FloatTensor
 
@@ -73,7 +73,7 @@ for epoch in range(start_epoch, opt.niter+1):
         if save_fake:
             print('save imgs')
             print('')
-            path = './result/sleeveReconL1/' + str(epoch) + '/' + str((i + 1) * opt.batch_size)
+            path = './result/sleeveRecon/' + str(epoch) + '/' + str((i + 1) * opt.batch_size)
             util.mkdir(path)
             vutils.save_image(
                 org_img, '%s/org_imgs.png' % path,
@@ -92,14 +92,14 @@ for epoch in range(start_epoch, opt.niter+1):
                 normalize=True
             )
 
-    save_dir = opt.checkpoints_dir + '/TailorGAN_Garmentset/path/sleeveReconL1/'
+    save_dir = opt.checkpoints_dir + '/Recon/'
     util.mkdir(save_dir)
     if epoch % 20 == 0:
-        save_path_srcE = save_dir + 'TailorGAN_Garment_recon_srcE_%s.pth' % epoch
+        save_path_srcE = save_dir + 'sleeveRecon_srcE_%s.pth' % epoch
         torch.save(model.srcE.state_dict(), save_path_srcE)
-        save_path_edgeE = save_dir + 'TailorGAN_Garment_recon_edgeE_%s.pth' % epoch
+        save_path_edgeE = save_dir + 'sleeveRecon_srcE_%s.pth' % epoch
         torch.save(model.edgeE.state_dict(), save_path_edgeE)
-        save_path_netG = save_dir + 'TailorGAN_Garment_recon_netG_%s.pth' % epoch
+        save_path_netG = save_dir + 'sleeveRecon_srcE_%s.pth' % epoch
         torch.save(model.netG.state_dict(), save_path_netG)
         print('Model saved!')
 

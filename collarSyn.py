@@ -8,49 +8,20 @@ from matplotlib.lines import Line2D
 from torch.utils.data import DataLoader
 from util import util
 from data import data_loader
-from models import create_model2
+from models import create_model
 from options.options import CollorOptions
 # from tensorboardX import SummaryWriter
 
-def plot_grad_flow(named_parameters):
-    '''Plots the gradients flowing through different layers in the net during training.
-    Can be used for checking for possible gradient vanishing / exploding problems.
-
-    Usage: Plug this function in Trainer class after loss.backwards() as
-    "plot_grad_flow(self.model.named_parameters())" to visualize the gradient flow'''
-    ave_grads = []
-    max_grads = []
-    layers = []
-    for n, p in named_parameters:
-        if (p.requires_grad) and ("bias" not in n):
-            layers.append(n)
-            ave_grads.append(p.grad.abs().mean())
-            max_grads.append(p.grad.abs().max())
-    plt.bar(np.arange(len(max_grads)), max_grads, alpha=0.1, lw=1, color="c")
-    plt.bar(np.arange(len(max_grads)), ave_grads, alpha=0.1, lw=1, color="b")
-    plt.hlines(0, 0, len(ave_grads) + 1, lw=2, color="k")
-    plt.xticks(range(0, len(ave_grads), 1), layers, rotation="vertical")
-    plt.xlim(left=0, right=len(ave_grads))
-    plt.ylim(bottom=-0.001, top=0.02)  # zoom in on the lower gradient regions
-    plt.xlabel("Layers")
-    plt.ylabel("average gradient")
-    plt.title("Gradient flow")
-    plt.grid(True)
-    plt.legend([Line2D([0], [0], color="c", lw=4),
-                Line2D([0], [0], color="b", lw=4),
-                Line2D([0], [0], color="k", lw=4)], ['max-gradient', 'mean-gradient', 'zero-gradient'])
-    plt.savefig("gradflow.jpg")
-    plt.show()
 
 opt = CollorOptions().parse()
 print(opt)
 start_epoch, epoch_iter = 1, 0
 
-dataset = data_loader.InterDataset(opt)
+dataset = data_loader.CollarDataset(opt)
 loader = DataLoader(dataset, batch_size=opt.batch_size, num_workers=opt.num_workers, shuffle=True)
 dataset_size = len(dataset)
 
-model = create_model2.create_collar_model(opt)
+model = create_model.create_collar_model(opt)
 model = model.cuda(opt.gpuid)
 Tensor = torch.cuda.FloatTensor
 
@@ -97,14 +68,15 @@ for epoch in range(start_epoch, opt.niter+1):
         model.optimizer_netD.zero_grad()
         syn_feat = torch.cat((refer_edge_feat, src_feat), dim=1)
         syn_img = model.netG(syn_feat, src_img)
-        true_pred_class, org_img_d, _ = model.netD(org_img)
-        fake_pred_class, syn_img_d, _ = model.netD(syn_img.detach())
+        true_pred_class, org_img_d, org_feat_d = model.netD(org_img)
+        fake_pred_class, syn_img_d, syn_feat_d = model.netD(syn_img.detach())
         true_pred_loss = model.class_loss(true_pred_class, org_img_type)
         # fake_pred_loss = model.class_loss(fake_pred_class, refer_img_type)
         lossD_real = model.adv_loss(org_img_d, True, opt.gpuid)
         lossD_fake = model.adv_loss(syn_img_d, False, opt.gpuid)
         dis_class_loss = true_pred_loss
-        lossD = 0.5 * lossD_real + 0.5 * lossD_fake + dis_class_loss
+        dis_concept_loss = model.concept_loss(syn_feat_d, org_feat_d)
+        lossD = 0.5 * lossD_real + 0.5 * lossD_fake + dis_class_loss + dis_concept_loss
         lossD.backward()
         model.optimizer_netD.step()
 
@@ -140,20 +112,13 @@ for epoch in range(start_epoch, opt.niter+1):
             print('Total loss: %.5f; discriminatorloss: %.5f; ganloss: %.5f; VGGloss: %.5f; '
                   'conceptloss: %.5f; classifierloss: %.5f.'
                   % (loss.data, lossD.data, ganloss.data * 2, VGGloss.data * 5, conceptloss.data * 2, classifierloss.data * 0.2))
-            # print('Total loss: %.5f; ganloss: %.5f; '
-            #       'discriminatorloss: %.5f'
-            #       % (loss.data, ganloss.data, lossD.data))
-
-            # writer.add_scalar('Val/GANLoss', ganloss, epoch)
-            # writer.add_scalar('Val/Classloss', classloss, epoch)
-            # writer.add_scalar('Val/VGGloss', VGGloss, epoch)
 
         save_fake = total_steps % opt.display_freq == display_delta
 
         if save_fake:
             print('save imgs')
             print('')
-            path = './result/collarSynLarge/' + str(epoch) + '/' + str((i + 1) * opt.batch_size)
+            path = './result/collarSyn/' + str(epoch) + '/' + str((i + 1) * opt.batch_size)
             util.mkdir(path)
             vutils.save_image(
                 org_img, '%s/org_imgs.png' % path,
@@ -172,17 +137,17 @@ for epoch in range(start_epoch, opt.niter+1):
                 normalize=True
             )
 
-    save_dir = opt.checkpoints_dir + '/TailorGAN_Garmentset/path/collarSynLarge/'
+    save_dir = opt.checkpoints_dir + '/FullModel/'
     util.mkdir(save_dir)
 
     if epoch % 2 == 0:
-        save_path_srcE = save_dir + 'TailorGAN_Garment_syn_srcE_%s.pth' % epoch
+        save_path_srcE = save_dir + 'FullModel_collar_srcE_%s.pth' % epoch
         torch.save(model.srcE.state_dict(), save_path_srcE)
-        save_path_edgeE = save_dir + 'TailorGAN_Garment_syn_edgeE_%s.pth' % epoch
+        save_path_edgeE = save_dir + 'FullModel__collar_edgeE_%s.pth' % epoch
         torch.save(model.edgeE.state_dict(), save_path_edgeE)
-        save_path_netG = save_dir + 'TailorGAN_Garment_syn_netG_%s.pth' % epoch
+        save_path_netG = save_dir + 'FullModel_collar_netG_%s.pth' % epoch
         torch.save(model.netG.state_dict(), save_path_netG)
-        save_path_netD = save_dir + 'TailorGAN_Garment_syn_netD_%s.pth' % epoch
+        save_path_netD = save_dir + 'FullModel_collar_netD_%s.pth' % epoch
         torch.save(model.netD.state_dict(), save_path_netD)
         print('Model saved!')
 
