@@ -64,15 +64,15 @@ class TailorGAN(nn.Module):
         if self.isTrain:
             if opt.step == 'step2':
                 self.srcE.load_state_dict(torch.load(
-                    './checkpoints/Recon/recon_srcE_%s.pth' % opt.num_epoch,
+                    './checkpoints/Recon/collarRecon_srcE_%s.pth' % opt.num_epoch,
                     map_location="cuda:%d" % opt.gpuid
                 ))
                 self.edgeE.load_state_dict(torch.load(
-                    './checkpoints/Recon/recon_srcE_%s.pth' % opt.num_epoch,
+                    './checkpoints/Recon/collarRecon_srcE_%s.pth' % opt.num_epoch,
                     map_location="cuda:%d" % opt.gpuid
                 ))
                 self.netG.load_state_dict(torch.load(
-                    './checkpoints/Recon/recon_srcE_%s.pth' % opt.num_epoch,
+                    './checkpoints/Recon/collarRecon_srcE_%s.pth' % opt.num_epoch,
                     map_location="cuda:%d" % opt.gpuid
                 ))
                 self.netD = networks.define_discriminator(opt.num_collar, input_nc=3, ndf=32, n_layers_D=3,
@@ -99,15 +99,15 @@ class TailorGAN(nn.Module):
             self.adv_loss = networks.GANLOSS()
         else:
             self.edgeE.load_state_dict(torch.load(
-                './checkpoints/FullModel/FullModel_edgeE.pth',
+                './checkpoints/FullModel/FullModel_collar_edgeE.pth',
                 map_location="cuda:%d" % opt.gpuid
             ))
             self.srcE.load_state_dict(torch.load(
-                './checkpoints/FullModel/FullModel_srcE.pth',
+                './checkpoints/FullModel/FullModel_collar_srcE.pth',
                 map_location="cuda:%d" % opt.gpuid
             ))
             self.netG.load_state_dict(torch.load(
-                './checkpoints/FullModel/FullModel_netG.pth',
+                './checkpoints/FullModel/FullModel_collar_netG.pth',
                 map_location="cuda:%d" % opt.gpuid
             ))
 
@@ -126,15 +126,15 @@ class SleeveGAN(nn.Module):
         if self.isTrain:
             if opt.step == 'step2':
                 self.srcE.load_state_dict(torch.load(
-                    './checkpoints/Recon/recon_srcE_%s.pth' % opt.num_epoch,
+                    './checkpoints/Recon/sleeveRecon_srcE_%s.pth' % opt.num_epoch,
                     map_location="cuda:%d" % opt.gpuid
                 ))
                 self.edgeE.load_state_dict(torch.load(
-                    './checkpoints/Recon/recon_srcE_%s.pth' % opt.num_epoch,
+                    './checkpoints/Recon/sleeveRecon_srcE_%s.pth' % opt.num_epoch,
                     map_location="cuda:%d" % opt.gpuid
                 ))
                 self.netG.load_state_dict(torch.load(
-                    './checkpoints/Recon/recon_srcE_%s.pth' % opt.num_epoch,
+                    './checkpoints/Recon/sleeveRecon_srcE_%s.pth' % opt.num_epoch,
                     map_location="cuda:%d" % opt.gpuid
                 ))
                 self.netD = networks.define_discriminator(opt.num_sleeve, input_nc=3, ndf=32, n_layers_D=3,
@@ -163,52 +163,14 @@ class SleeveGAN(nn.Module):
             self.adv_loss = networks.GANLOSS()
         else:
             self.edgeE.load_state_dict(torch.load(
-                './checkpoints/FullModel/FullModel_edgeE.pth',
+                './checkpoints/FullModel/FullModel_sleeve_edgeE.pth',
                 map_location="cuda:%d" % opt.gpuid
             ))
             self.srcE.load_state_dict(torch.load(
-                './checkpoints/FullModel/FullModel_srcE.pth',
+                './checkpoints/FullModel/FullModel_sleeve_srcE.pth',
                 map_location="cuda:%d" % opt.gpuid
             ))
             self.netG.load_state_dict(torch.load(
-                './checkpoints/FullModel/FullModel_netG.pth',
-                map_location="cuda:%d" % opt.gpuid
-            ))
-
-
-class Step2(nn.Module):
-    def name(self):
-        return 'Step2 only'
-
-    def __init__(self, opt):
-        super(Step2, self).__init__()
-        self.isTrain = opt.isTrain
-        self.srcE = networks.define_srcEncoder(norm='instance')
-        self.edgeE = networks.define_edgeEncoder(norm='instance')
-        self.netG = networks.define_generator('instance', opt.n_blocks, opt.use_dropout)
-        if self.isTrain:
-            self.netD = networks.define_discriminator(opt.num_collar, input_nc=3, ndf=32, n_layers_D=3,
-                                                      norm='instance', num_D=1)
-            self.optimizer_srcE = torch.optim.Adam(self.srcE.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
-            self.optimizer_edgeE = torch.optim.Adam(self.edgeE.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
-            self.optimizer_netG = torch.optim.Adam(self.netG.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
-            self.optimizer_netD = torch.optim.Adam(self.netD.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
-
-            self.class_loss = nn.CrossEntropyLoss()
-            self.recon_loss = nn.L1Loss()
-            self.concept_loss = nn.L1Loss()
-            self.VGGloss = networks.vggloss(opt)
-            self.adv_loss = networks.GANLOSS()
-        else:
-            self.edgeE.load_state_dict(torch.load(
-                './checkpoints/TailorGAN_Garmentset/path/sleeveRecon/TailorGAN_Garment_syn_edgeE_%s.pth' % opt.num_epoch,
-                map_location="cuda:%d" % opt.gpuid
-            ))
-            self.srcE.load_state_dict(torch.load(
-                './checkpoints/TailorGAN_Garmentset/path/sleeveRecon/TailorGAN_Garment_syn_srcE_%s.pth' % opt.num_epoch,
-                map_location="cuda:%d" % opt.gpuid
-            ))
-            self.netG.load_state_dict(torch.load(
-                './checkpoints/TailorGAN_Garmentset/path/sleeveRecon/TailorGAN_Garment_syn_netG_%s.pth' % opt.num_epoch,
+                './checkpoints/FullModel/FullModel_sleeve_netG.pth',
                 map_location="cuda:%d" % opt.gpuid
             ))
