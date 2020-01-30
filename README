@@ -1,7 +1,48 @@
-# All networks are placed in /model/network_revised.py
-# Use /model/create_model.py to create all models, including classifier training, reconstruction training and syn training.
-# train_classifier.py is used to train classifier.
-# recon.py is used to train reconstruction model
-# train_syn.py is used to train syn model.
-# syn_woE.py is used to train with frozen encoder, for this, opt.step will be set as step2, and the loader is not change since the data is already sampled and replace the order does not matter the forward or backward.
-# iterTrain.py is used to train at the same iteration update encoder in reconstruction, update netG, netD at synthesize step, for this training, use the other data loader, which will load extra reference edge map for synthesize.
+# TailorGAN
+
+TailorGAN: Making User-Defined Fashion Designs.
+
+  - paper link: https://arxiv.org/abs/2001.06427
+
+### Prerequisites
+* Linux system or MacOS
+* Python 3.6
+* NVIDIA GPU + CUDA
+
+### Installation
+
+* Install PyTorch and dependencies from http://pytorch.org
+
+### Test
+
+* Default, using test.py file to synthesize the garment from the images in the example folder. Pre-trained checkpoints download needed and as the instruction in the checkpoints folder to download.
+```sh
+$ python test.py
+```
+* Sample results are presented in the example folder.
+
+### Train
+
+* Training process is divided into two parts, the first part is reconstruction, using following command to train first step, and putting the checkpoints to corresponding folder to train second step.
+```sh
+$ python collarRecon.py --step step1
+```
+
+* Second step, using following command:
+```sh
+$ python collarSyn.py --step step2
+```
+
+### Citation
+
+* If you think our work is useful, please use the following:
+```sh
+@misc{chen2020tailorgan,
+    title={TailorGAN: Making User-Defined Fashion Designs},
+    author={Lele Chen and Justin Tian and Guo Li and Cheng-Haw Wu and Erh-Kan King and Kuan-Ting Chen and Shao-Hang Hsieh and Chenliang Xu},
+    year={2020},
+    eprint={2001.06427},
+    archivePrefix={arXiv},
+    primaryClass={cs.CV}
+}
+```
