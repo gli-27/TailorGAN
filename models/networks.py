@@ -139,33 +139,6 @@ class vggloss(nn.Module):
             loss += self.weights[i] * self.criterion(x_vgg[i], y_vgg[i].detach())
         return loss
 
-"""
-class vggLoss():
-
-    def contentFunc(self):
-        conv_3_3_layer = 14
-        cnn = models.vgg19(pretrained=True).features
-        cnn = cnn.cuda()
-        model = nn.Sequential()
-        model = model.cuda()
-        for i, layer in enumerate(list(cnn)):
-            model.add_module(str(i), layer)
-            if i == conv_3_3_layer:
-                break
-        return model
-
-    def initialize(self, loss):
-        self.criterion = loss
-        self.contentFunc = self.contentFunc()
-
-    def __call__(self, fakeIm, realIm):
-        f_fake = self.contentFunc.forward(fakeIm)
-        f_real = self.contentFunc.forward(realIm)
-        f_real_no_grad = f_real.detach()
-        loss = self.criterion(f_fake, f_real_no_grad)
-        return loss
-"""
-
 
 class ResnetBlock(nn.Module):
     """Define a Resnet block"""
@@ -524,27 +497,6 @@ class Classifier(nn.Module):
         pred_class = self.classifier(feat1)
         return pred_class
 
-"""
-class classifier(nn.Module):
-    def __init__(self, resnet, num_classes):
-        super(classifier, self).__init__()
-        if resnet == 'resnet34':
-            net = models.resnet34(pretrained=True)
-        elif resnet == 'resnet50':
-            net = models.resnet50(pretrained=True)
-        else:
-            net = models.resnet101(pretrained=True)
-        self.net = nn.Sequential(*list(net.children()))
-        for param in self.net[:-4].parameters():
-            param.requires_grad = False
-        num_feats = self.net[-1].in_features
-        self.fc = nn.Linear(num_feats, num_classes)
-
-    def forward(self, x):
-        x = self.net[:-1](x)
-        x = torch.flatten(x, 1)
-        return self.fc(x)
-"""
 
 from torchvision import models
 class Vgg19(torch.nn.Module):
