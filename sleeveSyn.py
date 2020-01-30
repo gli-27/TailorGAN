@@ -8,7 +8,7 @@ from matplotlib.lines import Line2D
 from torch.utils.data import DataLoader
 from util import util
 from data import data_loader
-from models import create_model_revised
+from models import create_model
 from options.options import SleeveOptions
 # from tensorboardX import SummaryWriter
 
@@ -20,7 +20,7 @@ dataset = data_loader.SleeveDataset(opt)
 loader = DataLoader(dataset, batch_size=opt.batch_size, num_workers=opt.num_workers, shuffle=True)
 dataset_size = len(dataset)
 
-model = create_model_revised.create_sleeve_model(opt)
+model = create_model.create_sleeve_model(opt)
 model = model.cuda(opt.gpuid)
 Tensor = torch.cuda.FloatTensor
 
