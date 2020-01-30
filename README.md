@@ -6,7 +6,7 @@ TailorGAN: Making User-Defined Fashion Designs.
 
 ### Prerequisites
 * Linux system or MacOS
-* Python 3.6
+* Python 3.6, PyTorch version 1.1.0
 * NVIDIA GPU + CUDA
 
 ### Installation
