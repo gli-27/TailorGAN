@@ -171,70 +171,10 @@ class SleeveCrop(Dataset):
     def __len__(self):
         return len(self.data_df)
 
-class CollarTestDataset(Dataset):
-    def __init__(self, opt):
-        self.opt = opt
-        self.collarTwo_df = pd.read_csv(opt.data_root + '/TestSet/collarTwoSet.csv')
-        self.collarOne_df = pd.read_csv(opt.data_root + '/TestSet/collarOneSet.csv')
-        self.collarSix_df = pd.read_csv(opt.data_root + '/TestSet/collarSixSet.csv')
-
-        self.transform = transforms.Compose([
-            transforms.ToPILImage(),
-            transforms.Resize((128, 128), interpolation=2),
-            transforms.RandomAffine(degrees=5),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
-        ])
-        self.org_transform = transforms.Compose([
-            transforms.ToPILImage(),
-            transforms.Resize((128, 128), interpolation=2),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
-        ])
-
-    def __getitem__(self, index):
-        idx2 = np.random.randint(0, len(self.collarTwo_df) - 1)
-        twoRow = self.collarTwo_df.iloc[idx2]
-        idx6 = np.random.randint(0, len(self.collarSix_df) - 1)
-        oneRow = self.collarOne_df.iloc[index]
-        sixRow = self.collarSix_df.iloc[idx6]
-
-        twoEdge = io.imread(twoRow.part_edgePath)
-        twoSrc = io.imread(twoRow.src_imgPath)
-        twoEdgeTensor = self.transform(np.uint8(twoEdge))
-        twoSrcTensor = self.org_transform(twoSrc.astype(np.uint8))
-        twoType = twoRow.collar_type
-
-        oneEdge = io.imread(oneRow.part_edgePath)
-        oneSrc = io.imread(oneRow.src_imgPath)
-        oneEdgeTensor = self.transform(np.uint8(oneEdge))
-        oneSrcTensor = self.org_transform(oneSrc.astype(np.uint8))
-        oneType = oneRow.collar_type
-
-        sixEdge = io.imread(sixRow.part_edgePath)
-        sixSrc = io.imread(sixRow.src_imgPath)
-        sixEdgeTensor = self.transform(np.uint8(sixEdge))
-        sixSrcTensor = self.org_transform(sixSrc.astype(np.uint8))
-        sixType = sixRow.collar_type
-
-        twoOrg = io.imread(twoRow.tgt_imgPath)
-        twoOrgTensor = self.org_transform(twoOrg.astype(np.uint8))
-        oneOrg = io.imread(oneRow.tgt_imgPath)
-        oneOrgTensor = self.org_transform(oneOrg.astype(np.uint8))
-        sixOrg = io.imread(sixRow.tgt_imgPath)
-        sixOrgTensor = self.org_transform(sixOrg.astype(np.uint8))
-
-        return [twoEdgeTensor, twoSrcTensor, oneEdgeTensor, oneSrcTensor,
-        sixEdgeTensor, sixSrcTensor, twoOrgTensor, oneOrgTensor, sixOrgTensor,
-                twoType, oneType, sixType]
-
-    def __len__(self):
-        return max(len(self.collarTwo_df), len(self.collarSix_df), len(self.collarOne_df))
-
 class CollarTest(Dataset):
     def __init__(self, opt):
         self.opt = opt
-        self.collar_df = pd.read_csv(opt.data_root + '/Res/testSet.csv')
+        self.collar_df = pd.read_csv(opt.data_root + '/collarTestSet.csv')
 
         self.transform = transforms.Compose([
             transforms.ToPILImage(),
@@ -272,8 +212,8 @@ class CollarTest(Dataset):
 class SleeveTestDataset(Dataset):
     def __init__(self, opt):
         self.opt = opt
-        self.shortSleeve_df = pd.read_csv(opt.data_root + '/TestSet/shortSleeveSet.csv')
-        self.longSleeve_df = pd.read_csv(opt.data_root + '/TestSet/longSleeveSet.csv')
+        self.shortSleeve_df = pd.read_csv(opt.data_root + '/shortSleeveSet.csv')
+        self.longSleeve_df = pd.read_csv(opt.data_root + '/longSleeveSet.csv')
 
     def __getitem__(self, index):
         shortRow = self.shortSleeve_df.iloc[index]
@@ -336,47 +276,3 @@ class SleeveTest(Dataset):
 
     def __len__(self):
         return len(self.sleeve_df)
-
-
-class LeaveOutTest(Dataset):
-    def __init__(self, opt):
-        self.opt = opt
-        self.collar_df = pd.read_csv(opt.data_root + '/Res/mainTestSet.csv')
-        self.one_df = pd.read_csv(opt.data_root + '/Res/one.csv')
-        self.two_df = pd.read_csv(opt.data_root + '/Res/two.csv')
-        self.six_df = pd.read_csv(opt.data_root + '/Res/six.csv')
-
-        self.transform = transforms.Compose([
-            transforms.ToPILImage(),
-            transforms.Resize((128, 128), interpolation=2),
-            transforms.RandomAffine(degrees=5),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
-        ])
-        self.org_transform = transforms.Compose([
-            transforms.ToPILImage(),
-            transforms.Resize((128, 128), interpolation=2),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
-        ])
-
-    def __getitem__(self, idx):
-        srcIdx = np.random.randint(0, len(self.collar_df)-1)
-        srcRow = self.collar_df.iloc[srcIdx]
-        refRow = self.six_df.iloc[idx]
-
-        edge = io.imread(refRow.part_edgePath)
-        ref = io.imread(refRow.tgt_imgPath)
-        src = io.imread(srcRow.src_imgPath)
-        org = io.imread(srcRow.tgt_imgPath)
-        refType = refRow.collar_type
-
-        edgeTensor = self.transform(np.uint8(edge))
-        refTensor = self.org_transform(ref.astype(np.uint8))
-        srcTensor = self.org_transform(src.astype(np.uint8))
-        orgTensor = self.org_transform(org.astype(np.uint8))
-
-        return [edgeTensor, srcTensor, orgTensor, refTensor, refType]
-
-    def __len__(self):
-        return len(self.six_df)
