@@ -33,6 +33,11 @@ $ python collarRecon.py --step step1
 $ python collarSyn.py --step step2
 ```
 
+
+### Dataset
+
+* The dataset is available online, please download it from the link: , and put it under the /data foler. 
+
 ### Citation
 
 * If you think our work is useful, please use the following:
