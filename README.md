@@ -36,7 +36,7 @@ $ python collarSyn.py --step step2
 
 ### Dataset
 
-* The dataset is available online, please download it from the link: , and put it under the /data foler. 
+* The dataset is available online, please download it from the link: https://drive.google.com/open?id=11WMP0uCgzF--Kt18Dwh75Ja-nK1llMcx, and put it under the /data foler. 
 
 ### Citation
 
