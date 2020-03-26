@@ -25,4 +25,6 @@ For the sleeve csv file:
 	"edge_path" refers to the intergral edge of the cloth images, which also is not used during training and testing process.
 	"CroppedSleeve" refers to the edge of the sleeve part images.
 
+The experiments dataset part are randomly selected from the testSet, please use the pandas package to build your own test for leave one out experiment and sleeve test set.
+
 If you have any questions, please email to the authors. If you think the dataset is useful, please cite our paper. Thank you!
