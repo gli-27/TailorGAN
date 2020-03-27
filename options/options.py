@@ -9,7 +9,7 @@ class CollorOptions():
 
     def initialize(self):
         self.parser.add_argument('--name', type=str, default='TailorGAN')
-        self.parser.add_argument('--data_root', type=str, default='/DATA')
+        self.parser.add_argument('--data_root', type=str, default='/data/DATA')
         self.parser.add_argument('--data_path', type=str, default='/collarTrainSet.csv')
         self.parser.add_argument('--pretrain_pkg', type=str, default='/pretrain_pkg/')
         self.parser.add_argument('--niter', type=int, default=120, help='# of iter at starting learning rate')
@@ -68,7 +68,7 @@ class SleeveOptions():
 
     def initialize(self):
         self.parser.add_argument('--name', type=str, default='TailorGAN')
-        self.parser.add_argument('--data_root', type=str, default='/DATA')
+        self.parser.add_argument('--data_root', type=str, default='/data/DATA')
         self.parser.add_argument('--data_path', type=str, default='/sleeveTrainSet.csv')
         self.parser.add_argument('--pretrain_pkg', type=str, default='/pretrain_pkg/')
         self.parser.add_argument('--niter', type=int, default=32, help='# of iter at starting learning rate')
@@ -127,7 +127,7 @@ class ClassifierOptions():
 
     def initialize(self):
         self.parser.add_argument('--name', type=str, default='TailorGAN')
-        self.parser.add_argument('--data_root', type=str, default='/DATA')
+        self.parser.add_argument('--data_root', type=str, default='/data/DATA')
         self.parser.add_argument('--data_path', type=str, default='/collarTrainSet.csv')
         self.parser.add_argument('--pretrain_pkg', type=str, default='/pretrain_pkg/')
         self.parser.add_argument('--niter', type=int, default=80, help='# of iter at starting learning rate')
